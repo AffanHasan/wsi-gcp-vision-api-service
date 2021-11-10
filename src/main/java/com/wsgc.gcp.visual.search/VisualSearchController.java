@@ -3,6 +3,7 @@ package com.wsgc.gcp.visual.search;
 import com.google.cloud.vision.v1.*;
 import com.google.cloud.vision.v1.Feature.Type;
 import com.google.cloud.vision.v1.ProductSearchResults.Result;
+import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import com.wsgc.gcp.visual.search.uploadingfiles.storage.StorageFileNotFoundException;
 import com.wsgc.gcp.visual.search.uploadingfiles.storage.StorageService;
@@ -49,7 +50,8 @@ public class VisualSearchController {
 	}
 
 	@PostMapping("/upload")
-	public String handleFileUpload(@RequestParam("file") MultipartFile file,
+	@ResponseBody
+	public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file,
 								   RedirectAttributes redirectAttributes, final Model model) throws Exception {
 
 		storageService.store(file);
@@ -57,10 +59,14 @@ public class VisualSearchController {
 		final List<Result> results = getSimilarProductsFile(PROJECT_ID, REGION_NAME,
 				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, path.toString(), "");
 		model.addAttribute("results", results.stream() //
-				.map(i -> new VisionSearchResult(i.getProduct().getName(), "2 USD",
+				.map(i -> new VisionSearchResult(i.getProduct().getDisplayName(), "2 USD",
 						i.getImage())) //
 				.collect(Collectors.toList()));
-		return "uploadForm";
+		return ResponseEntity.ok().header("Content-Type", "application/json") //
+		.body(new Gson().toJson(results.stream() //
+				.map(i -> new VisionSearchResult(i.getProduct().getDisplayName(), "2 USD",
+						i.getImage())) //
+				.collect(Collectors.toList())));
 	}
 
 	@ExceptionHandler(StorageFileNotFoundException.class)
@@ -87,7 +93,7 @@ public class VisualSearchController {
 			byte[] content = Files.readAllBytes(imgPath.toPath());
 
 			// Create annotate image request along with product search feature.
-			Feature featuresElement = Feature.newBuilder().setType(Type.PRODUCT_SEARCH).build();
+			Feature featuresElement = Feature.newBuilder().setType(Type.PRODUCT_SEARCH).setMaxResults(50).build();
 			// The input image can be a HTTPS link or Raw image bytes.
 			// Example:
 			// To use HTTP link replace with below code
