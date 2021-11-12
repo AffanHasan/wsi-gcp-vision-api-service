@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Controller
+@CrossOrigin(origins = "*")
 public class VisualSearchController {
 
 	private final StorageService storageService;
@@ -50,7 +51,7 @@ public class VisualSearchController {
 		setModel(model, results);
 		return ResponseEntity.ok().header("Content-Type", "application/json") //
 				.body(new Gson().toJson(results.stream() //
-						.map(i -> new VisionSearchResult(i.getProduct().getDisplayName(), "2 USD",
+						.map(i -> new VisionSearchResult(i.getProduct().getDisplayName(), "2",
 								i.getImage())) //
 						.collect(Collectors.toList())));
 	}
@@ -67,7 +68,7 @@ public class VisualSearchController {
 		setModel(model, results);
 		return ResponseEntity.ok().header("Content-Type", "application/json") //
 		.body(new Gson().toJson(results.stream() //
-				.map(i -> new VisionSearchResult(i.getProduct().getDisplayName(), "2 USD",
+				.map(i -> new VisionSearchResult(i.getProduct().getDisplayName(), "2",
 						i.getImage())) //
 				.collect(Collectors.toList())));
 	}
