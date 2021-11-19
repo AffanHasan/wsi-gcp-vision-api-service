@@ -18,7 +18,7 @@ public class ProductImages {
     }
 
     public  void addImage(final String imageId){
-        this.getImages().add("https://storage.googleapis.com/" + BUCKET_NAME + "/" + imageId + ".jpg");
+        this.getImages().add("https://storage.googleapis.com/" + BUCKET_NAME + "/" + imageId);
     }
 
     @Override

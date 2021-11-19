@@ -15,14 +15,14 @@ public class VisionSearchResult {
     private final Float score;
 
     public VisionSearchResult(final String pid, final String productName, final String productPrice,
-                              final String productImage,
+                              final String imageId,
                               final Float score) {
         this.pid = pid;
         this.productName = productName;
         this.productPrice = productPrice;
 /*        this.productImage = "https://storage.googleapis.com/" + BUCKET_NAME + "/" +
                 productImage.split("/")[7].replace("-id", ".jpg");*/
-                this.productImage = "https://storage.googleapis.com/" + BUCKET_NAME + "/" + productImage + ".jpg";
+                this.productImage = "https://storage.googleapis.com/" + BUCKET_NAME + "/" + imageId;
         this.score = score;
     }
 

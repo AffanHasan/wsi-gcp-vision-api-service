@@ -3,6 +3,7 @@ package com.wsgc.gcp.visual.search;
 import static com.wsgc.gcp.visual.search.util.SearchUtility.*;
 
 import com.google.cloud.vision.v1.ProductSearchClient;
+import com.google.cloud.vision.v1.ProductSearchResults;
 import com.google.cloud.vision.v1.ProductSearchResults.Result;
 import com.google.cloud.vision.v1.ReferenceImage;
 import com.google.gson.Gson;
@@ -29,13 +30,11 @@ public class VisualSearchController {
 
 	private final StorageService storageService;
 
-	public static String PRODUCT_SET_ID = "we-product-set-17-nov-2021-12-59-pm";
+	public static String PRODUCT_SET_ID = "we-product-set-18-nov-2021-12-49-pm";
 
 	public static String REGION_NAME = "asia-east1";
 
 	public static String BUCKET_NAME = "wsi-vision-api-bucket";
-
-	public static String CSV_FILE_GS_LOCATION = "gs://" + BUCKET_NAME + "/create-product-set.csv";
 
 	public static String PROJECT_ID = "wsi-product-vision-search";
 
@@ -62,13 +61,23 @@ public class VisualSearchController {
 	@ResponseBody
 	public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file,
 								   RedirectAttributes redirectAttributes, final Model model) throws Exception {
-
 		storageService.store(file);
 		final Path path = storageService.load(file.getOriginalFilename());
-		final List<Result> results = getSimilarProducts(PROJECT_ID, REGION_NAME,
+		final List<ProductSearchResults.Result> results = getSimilarProducts(PROJECT_ID, REGION_NAME,
 				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, path.toString(), null, "");
 		setModel(model, results);
 		return getResponseEntity(results);
+	}
+
+	@PostMapping("/uploadAndReturnModel")
+	public String handleFileUploadAndReturnModel(@RequestParam("file") MultipartFile file,
+												   RedirectAttributes redirectAttributes, final Model model) throws Exception {
+		storageService.store(file);
+		final Path path = storageService.load(file.getOriginalFilename());
+		final List<ProductSearchResults.Result> results = getSimilarProducts(PROJECT_ID, REGION_NAME,
+				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, path.toString(), null, "");
+		setModel(model, results);
+		return "uploadForm";
 	}
 
 	@GetMapping("/get-product-images")
@@ -101,22 +110,30 @@ public class VisualSearchController {
 		}
 	}
 
-	private ResponseEntity<String> getResponseEntity(List<Result> results) {
+	private ResponseEntity<String> getResponseEntity(List<ProductSearchResults.Result> results) {
 		List<VisionSearchResult> list = results.stream() //
-				.map(i -> new VisionSearchResult(i.getProduct().getName().substring(i.getProduct().getName().lastIndexOf('/') + 1)
+				.map(i -> new VisionSearchResult(i.getProduct().getName()
 						, i.getProduct().getDisplayName(), "2",
-						i.getImage(), i.getScore())) //
+						this.fetchImageIdFromProductImage(i.getImage()), i.getScore())) //
 				.collect(Collectors.toList());
 		return ResponseEntity.ok().header("Content-Type", "application/json") //
 				.body(new Gson().toJson(list));
 	}
 
-	private void setModel(final Model model, final List<Result> results) {
+	private void setModel(final Model model, final List<ProductSearchResults.Result> results) {
 		model.addAttribute("results", results.stream() //
-				.map(i -> new VisionSearchResult(i.getProduct().getName().substring(i.getProduct().getName().lastIndexOf('/') + 1),
+				.map(i -> new VisionSearchResult(this.fetchProductIdFromProductName(i.getProduct().getName()),
 						i.getProduct().getDisplayName(), "2",
-						i.getImage(), i.getScore())) //
+						this.fetchImageIdFromProductImage(i.getImage()), i.getScore())) //
 				.collect(Collectors.toList()));
+	}
+
+	private String fetchProductIdFromProductName(final String productName) {
+		return productName.substring(productName.lastIndexOf("/") + 1);
+	}
+
+	private String fetchImageIdFromProductImage(final String imageName) {
+		return imageName.substring(imageName.lastIndexOf("/") + 1);
 	}
 
 	@ExceptionHandler(StorageFileNotFoundException.class)
