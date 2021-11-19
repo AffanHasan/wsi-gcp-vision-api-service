@@ -52,7 +52,7 @@ public class VisualSearchController {
 												 final Model model) throws Exception {
 
 		final List<Result> results = getSimilarProducts(PROJECT_ID, REGION_NAME,
-				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, null, request.getUrl(), "");
+				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, request.getUrl(), "", null);
 		setModel(model, results);
 		return getResponseEntity(results);
 	}
@@ -61,10 +61,10 @@ public class VisualSearchController {
 	@ResponseBody
 	public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file,
 								   RedirectAttributes redirectAttributes, final Model model) throws Exception {
-		storageService.store(file);
-		final Path path = storageService.load(file.getOriginalFilename());
+/*		storageService.store(file);
+		final Path path = storageService.load(file.getOriginalFilename());*/
 		final List<ProductSearchResults.Result> results = getSimilarProducts(PROJECT_ID, REGION_NAME,
-				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, path.toString(), null, "");
+				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, null, "", file.getBytes());
 		setModel(model, results);
 		return getResponseEntity(results);
 	}
@@ -72,10 +72,10 @@ public class VisualSearchController {
 	@PostMapping("/uploadAndReturnModel")
 	public String handleFileUploadAndReturnModel(@RequestParam("file") MultipartFile file,
 												   RedirectAttributes redirectAttributes, final Model model) throws Exception {
-		storageService.store(file);
-		final Path path = storageService.load(file.getOriginalFilename());
-		final List<ProductSearchResults.Result> results = getSimilarProducts(PROJECT_ID, REGION_NAME,
-				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, path.toString(), null, "");
+//		storageService.store(file);
+//		final Path path = storageService.load(file.getOriginalFilename());
+		final List<ProductSearchResults.Result> results = getSimilarProductsTemp(PROJECT_ID, REGION_NAME,
+				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, null, "", file.getBytes());
 		setModel(model, results);
 		return "uploadForm";
 	}
@@ -112,8 +112,8 @@ public class VisualSearchController {
 
 	private ResponseEntity<String> getResponseEntity(List<ProductSearchResults.Result> results) {
 		List<VisionSearchResult> list = results.stream() //
-				.map(i -> new VisionSearchResult(i.getProduct().getName()
-						, i.getProduct().getDisplayName(), "2",
+				.map(i -> new VisionSearchResult(fetchProductIdFromProductName(i.getProduct().getName()),
+						i.getProduct().getDisplayName(), "2",
 						this.fetchImageIdFromProductImage(i.getImage()), i.getScore())) //
 				.collect(Collectors.toList());
 		return ResponseEntity.ok().header("Content-Type", "application/json") //
