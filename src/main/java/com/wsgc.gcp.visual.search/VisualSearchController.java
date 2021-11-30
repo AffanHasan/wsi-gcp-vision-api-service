@@ -4,14 +4,13 @@ import static com.wsgc.gcp.visual.search.util.SearchUtility.*;
 
 import com.google.cloud.vision.v1.ProductSearchClient;
 import com.google.cloud.vision.v1.ProductSearchResults;
-import com.google.cloud.vision.v1.ProductSearchResults.Result;
 import com.google.cloud.vision.v1.ReferenceImage;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.wsgc.gcp.visual.search.uploadingfiles.storage.StorageFileNotFoundException;
 import com.wsgc.gcp.visual.search.uploadingfiles.storage.StorageService;
 import com.wsgc.gcp.visual.search.util.ImageURLSearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,9 +19,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Controller
@@ -31,7 +30,8 @@ public class VisualSearchController {
 
 	private final StorageService storageService;
 
-	public static String PRODUCT_SET_ID = "we-product-set-18-nov-2021-12-49-pm";
+	public static String WE_PRODUCT_SET_ID = "we-product-set-18-nov-2021-12-49-pm";
+	public static String PK_PRODUCT_SET_ID = "pk-product-set";
 
 	public static String REGION_NAME = "asia-east1";
 
@@ -53,21 +53,33 @@ public class VisualSearchController {
 												 final Model model) throws Exception {
 
 		final String json = getSimilarProductsJsonString(PROJECT_ID, REGION_NAME,
-				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, request.getUrl(), "", null);
+				WE_PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, request.getUrl(), "", null);
 		return getResponseEntity(json);
 	}
 
-	@PostMapping("/upload")
+	@PostMapping(value = "/upload", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_OCTET_STREAM_VALUE})
 	@ResponseBody
 	public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file,
+								   @RequestPart("brand") final String brand,
 								   RedirectAttributes redirectAttributes, final Model model) throws Exception {
-/*		storageService.store(file);
-		final Path path = storageService.load(file.getOriginalFilename());*/
-		final String json = getSimilarProductsJsonString(PROJECT_ID, REGION_NAME,
-				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, null, "", file.getBytes());
-/*		setModel(model, getSimilarProducts (PROJECT_ID, REGION_NAME,
-				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, null, "", file.getBytes()));*/
-
+		System.out.println(brand);
+		final String json;
+		switch (brand.toUpperCase(Locale.ROOT)) {
+			case "WE": {
+				 json = getSimilarProductsJsonString(PROJECT_ID, REGION_NAME,
+						WE_PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, null, "", file.getBytes());
+				break;
+			}
+			case "PK":
+			{
+				json = getSimilarProductsJsonString(PROJECT_ID, REGION_NAME,
+						PK_PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, null, "", file.getBytes());
+				break;
+			}
+			default: {
+				json = "{}";
+			}
+		}
 		return getResponseEntity(json);
 	}
 
@@ -75,7 +87,7 @@ public class VisualSearchController {
 	public String handleFileUploadAndReturnModel(@RequestParam("file") MultipartFile file,
 												   RedirectAttributes redirectAttributes, final Model model) throws Exception {
 		final List<ProductSearchResults.Result> results = getSimilarProductsTemp(PROJECT_ID, REGION_NAME,
-				PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, null, "", file.getBytes());
+				WE_PRODUCT_SET_ID, GOOGLE_PRODUCT_CATEGORY, null, "", file.getBytes());
 		setModel(model, results);
 		return "uploadForm";
 	}
